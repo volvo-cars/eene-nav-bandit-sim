@@ -15,6 +15,9 @@ from util.utils_gamma import gamma_prior_alpha_mode, GammaConjugatePriorAlphaDis
 from util.common import mc_estimate_of_mean_charge_power_reciprocal, MillerDummyModeSampler
 
 
+EPSILON = np.finfo(float).eps
+
+
 class NavigationBanditAlgorithm(BanditAlgorithm):
 
     def __init__(self,
@@ -158,8 +161,11 @@ class EpsilonGreedyNavigationBanditAlgorithm(NavigationBanditAlgorithm):
             if alpha >= 1:
                 lambda_hat = (alpha - 1.) / beta
             else:
-                # This shouldn't happen with a properly selected prior distribution.
-                raise ValueError("Prior alpha parameter should be greater than or equal to 1!")
+                logging.warning("EpsilonGreedyNavigationBanditAlgorithm: Posterior mode of queue distribution " +
+                                "lambda parameter less than or equal to 0.0: " + str((alpha - 1.) / beta) + ". " +
+                                "This might happen due to improperly chosen prior distribution parameters or " +
+                                "numerical errors. As a workaround, using lambda=" + str(EPSILON / beta))
+                lambda_hat = EPSILON / beta
             expected_queue_time = 1. / lambda_hat
 
             # Mode of the posterior distribution over the transformed charge power distribution parameters
@@ -171,10 +177,14 @@ class EpsilonGreedyNavigationBanditAlgorithm(NavigationBanditAlgorithm):
             # Mode of the posterior distribution over beta
             alpha0 = s * alpha_hat
             beta0 = q
-            if alpha0 >= 1.:
+            if alpha0 > 1.:
                 beta_hat = (alpha0 - 1.) / beta0
             else:
-                raise ValueError("This should not happen with a properly chosen prior distribution!")
+                logging.warning("EpsilonGreedyNavigationBanditAlgorithm: Posterior mode of charging distribution " +
+                                "beta parameter less than or equal to 0.0: " + str((alpha0 - 1.) / beta0) + ". " +
+                                "This might happen due to improperly chosen prior distribution parameters or " +
+                                "numerical errors. As a workaround, using beta=" + str(EPSILON / beta0))
+                beta_hat = EPSILON / beta0
 
             # MAP estimate of the expected value of the gamma weight distribution
             gamma_mean_estimate = alpha_hat / beta_hat
