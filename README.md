@@ -6,7 +6,19 @@ following [paper](https://openreview.net/forum?id=ndw90pkNM9):
 `Niklas Åkerblom & Morteza Haghir Chehreghani (2023). A Combinatorial Semi-Bandit Approach to Charging Station 
 Selection for Electric Vehicles. Transactions on Machine Learning Research (TMLR).`
 
-## Prerequisites 
+## Dependencies
+
+The project is developed using Python 3.9, with the following dependencies and versions:
+
+| Dependency |             Version |
+|:-----------|--------------------:|
+| NumPy      | `1.24.2` - `1.26.2` |
+| SciPy      |  `1.9.3` - `1.11.3` |
+| Matplotlib |   `3.6.2` - `3.8.1` |
+| Pandas     |   `1.4.3` - `2.1.3` |
+| NetworkX   |   `2.8.8` - `3.2.1` |
+
+## Input Data 
 
 The simulation framework requires the user to provide a road network graph and a list of charging stations. Both need
 to be provided as CSV files. Each row in the road network graph CSV file represents an edge in the road network graph,
@@ -35,7 +47,9 @@ each charging station.
 
 While these files are not provided in this repository, the public data sources used in the paper are 
 [OpenStreetMap](https://www.openstreetmap.org/) and [Open Charge Map](https://openchargemap.org/) for the road graph
-and charging station list, respectively.
+and charging station list, respectively. The mean energy consumption can be computed using the formula in Eq. 15 of 
+the paper, together speed, length and topology data from the road network graph. Similarly, the mean travel time can
+be computed using the length and maximum allowed speed of each edge in the road network graph.
 
 ## Graph Preprocessing
 
