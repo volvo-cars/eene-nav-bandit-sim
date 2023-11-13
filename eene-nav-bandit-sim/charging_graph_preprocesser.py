@@ -48,7 +48,7 @@ def main():
         from_station = source_charging_stations[from_station_id]
         logging.info('Station no. ' + str(from_idx) + ': Starting shortest path')
 
-        _, predecessors = nx.dijkstra_predecessor_and_distance(nx_graph, from_station['node_id'])
+        predecessors, _ = nx.dijkstra_predecessor_and_distance(nx_graph, from_station['node_id'])
         distances = add_consumption_to_distances(predecessors, source_graph, from_station['node_id'])
         logging.info('Station no. ' + str(from_idx) + ': Finished shortest path')
 
@@ -63,10 +63,6 @@ def main():
                 consumption_array[0, to_idx] = consumption
         logging.info('Station no. ' + str(from_idx) + ': Finished charging station lookup')
 
-        np.save(args.output_dir + '/time_' + str(from_idx) + '.npy', time_array)
-        np.save(args.output_dir + '/consumption_' + str(from_idx) + '.npy', consumption_array)
-        logging.info('Station no. ' + str(from_idx) + ': Saved arrays to cache')
-
         finished_time_arrays.append(time_array)
         finished_consumption_arrays.append(consumption_array)
 
@@ -77,7 +73,7 @@ def main():
 
     np.save(args.output_dir + 'complete_time_array.npy', complete_time_array)
     np.save(args.output_dir + 'complete_consumption_array.npy', complete_consumption_array)
-    logging.info('Saved complete arrays to cache')
+    logging.info('Saved time and consumption arrays')
 
     station_ids = []
     node_ids = []
@@ -141,7 +137,8 @@ def create_charging_station_dictionary(charging_station_df):
 def add_consumption_to_distances(predecessors, source_graph, start_node):
     successors = defaultdict(list)
     for successor, predecessor in predecessors.items():
-        successors[successor].append(predecessor)
+        if len(predecessor) > 0:
+            successors[predecessor[0]].append(successor)
     consumption_distances = dict()
     node_queue = deque()
     node_queue.append(start_node)
