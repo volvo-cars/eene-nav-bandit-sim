@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# Copyright 2023 Volvo Car Corporation
+# Licensed under Apache 2.0.
 
 from collections import MutableMapping
 

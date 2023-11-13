@@ -73,8 +73,7 @@ the script `charging_graph_preprocesser.py` in the `eene-nav-bandit-sim` folder,
 arguments:
 
 ```
-python charging_graph_preprocesser.py --road-graph-csv-path [road graph CSV path] 
---charging-station-csv-path [charging station CSV path]
+python charging_graph_preprocesser.py --road-graph-csv-path [road graph CSV path] --charging-station-csv-path [charging station CSV path]
 ```
 
 This will produce three files, `charging_graph_ids.csv`, `complete_consumption_array.npy` and `complete_time_array.npy`,
@@ -97,8 +96,7 @@ To start the simulation, run the Python file `sim_runner.py`  in the `eene-nav-b
 required set of command line arguments as follows:
 
 ```
-python sim_runner.py --charging-station-csv-path [charging station CSV path] --start-node-id [start vertex ID]
---end-node-id [end vertex ID]
+python sim_runner.py --charging-station-csv-path [charging station CSV path] --start-node-id [start vertex ID] --end-node-id [end vertex ID]
 ```
 
 Completing the simulation will produce a CSV file (`results.csv`) containing instant and cumulative regret per 
@@ -133,9 +131,13 @@ is given below:
 **NOTE**: Charging power prior distribution parameters `r0` and `s0` are merged to a single parameter `xi_0` in the 
 paper.
 
+## Contributing
+
+The code is provided "as is", but we welcome contributions as outlined in [CONTRIBUTING.md](CONTRIBUTING.md). 
+
 ## License
 
-The code is licensed under an Apache 2.0 license. The code is provided "as is".
+The code is licensed under an Apache 2.0 license, copyright 2023 Volvo Car Corporation.
 
 ## Acknowledgements
 

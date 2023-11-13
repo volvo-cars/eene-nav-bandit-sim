@@ -1,3 +1,5 @@
+# Copyright 2023 Volvo Car Corporation
+# Licensed under Apache 2.0.
 
 import numpy as np
 import scipy.special as sc
