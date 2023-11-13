@@ -1,0 +1,10 @@
+@article{
+    akerblom2023charging,
+    title={A Combinatorial Semi-Bandit Approach to Charging Station
+    Selection for Electric Vehicles},
+    author={Niklas {\AA}kerblom and Morteza {Haghir Chehreghani}},
+    journal={Transactions on Machine Learning Research},
+    issn={2835-8856},
+    year={2023},
+    url={https://openreview.net/forum?id=ndw90pkNM9}
+}

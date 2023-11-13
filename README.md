@@ -6,6 +6,21 @@ following [paper](https://openreview.net/forum?id=ndw90pkNM9):
 `Niklas Åkerblom & Morteza Haghir Chehreghani (2023). A Combinatorial Semi-Bandit Approach to Charging Station 
 Selection for Electric Vehicles. Transactions on Machine Learning Research (TMLR).`
 
+Please cite us in the following way you use the code for new publications:
+
+```
+@article{
+    akerblom2023charging,
+    title={A Combinatorial Semi-Bandit Approach to Charging Station 
+    Selection for Electric Vehicles},
+    author={Niklas {\AA}kerblom and Morteza {Haghir Chehreghani}},
+    journal={Transactions on Machine Learning Research},
+    issn={2835-8856},
+    year={2023},
+    url={https://openreview.net/forum?id=ndw90pkNM9}
+}
+```
+
 ## Dependencies
 
 The project is developed using Python 3.9, with the following dependencies and versions:
@@ -57,8 +72,10 @@ Before the simulation can be started, it is necessary to preprocess the road gra
 the script `charging_graph_preprocesser.py` in the `eene-nav-bandit-sim` folder, with the following command line 
 arguments:
 
-`python charging_graph_preprocesser.py --road-graph-csv-path [road graph CSV path] 
---charging-station-csv-path [charging station CSV path]`
+```
+python charging_graph_preprocesser.py --road-graph-csv-path [road graph CSV path] 
+--charging-station-csv-path [charging station CSV path]
+```
 
 This will produce three files, `charging_graph_ids.csv`, `complete_consumption_array.npy` and `complete_time_array.npy`,
 which will be saved to the `output` folder (by default). The complete list of possible arguments to
@@ -79,8 +96,10 @@ may take several hours to complete.
 To start the simulation, run the Python file `sim_runner.py`  in the `eene-nav-bandit-sim` folder with the minimum 
 required set of command line arguments as follows:
 
-`python sim_runner.py --charging-station-csv-path [charging station CSV path] --start-node-id [start vertex ID]
---end-node-id [end vertex ID]`
+```
+python sim_runner.py --charging-station-csv-path [charging station CSV path] --start-node-id [start vertex ID]
+--end-node-id [end vertex ID]
+```
 
 Completing the simulation will produce a CSV file (`results.csv`) containing instant and cumulative regret per 
 simulation iteration for each of the implemented exploration methods (`Greedy`, `Epsilon-Greedy`, `Thompson Sampling` 
