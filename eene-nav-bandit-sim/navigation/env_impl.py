@@ -296,7 +296,8 @@ class NavigationBanditEnvironment(BanditEnvironment):
                                                                                     charge_beta,
                                                                                     min_power,
                                                                                     max_power,
-                                                                                    scale=self.power_scale)
+                                                                                    scale=self.power_scale,
+                                                                                    rng=self.rng)
             charging_power = 1. / charging_power_reciprocal
             charge_parameters = (charging_power, charge_alpha, charge_beta, max_power, min_power, self.power_scale)
             charging_station_parameters = (queue_parameters, charge_parameters)
@@ -373,8 +374,8 @@ class NavigationBanditEnvironment(BanditEnvironment):
         charging stations visited along the traveled path.
         :return: The feedback (observed time) of the action (path). The feedback consists of a two-element
         tuple, where the first element is a dict of dicts containing the travel / queue / charge time of the edges
-        traversed along the path (indexed by source and target vertex of each edge), and the second element is a dict
-        of feedback indexed by charging station ID (each feedback, in turn, consists of a two-element tuple with
+        traversed along the path (indexed by source and target vertex of each edge), and the second element is a list
+        of feedbacks for each charging station (each feedback, in turn, consists of a two-element list with
         (negative) queue time and charging time of each visited charging station).
         """
         (path, station_ids) = action

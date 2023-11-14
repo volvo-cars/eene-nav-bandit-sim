@@ -100,7 +100,8 @@ class AbstractNavigationBanditAlgorithm(BanditAlgorithm):
         charging_power_reciprocal = mc_estimate_of_mean_charge_power_reciprocal(charge_alpha,
                                                                                 charge_beta,
                                                                                 min_power,
-                                                                                max_power)
+                                                                                max_power,
+                                                                                rng=self.rng)
         return mean_queue_time, 1./charging_power_reciprocal
 
     def update_with_feedback(self, iteration, action, feedback):
@@ -112,8 +113,8 @@ class AbstractNavigationBanditAlgorithm(BanditAlgorithm):
         charging stations visited along the traveled path.
         :param feedback: The feedback (observed time) of the action (path). The feedback consists of a two-element
         tuple, where the first element is a dict of dicts containing the travel / queue / charge time of the edges
-        traversed along the path (indexed by source and target vertex of each edge), and the second element is a dict
-        of feedback indexed by charging station ID (each feedback, in turn, consists of a two-element tuple with
+        traversed along the path (indexed by source and target vertex of each edge), and the second element is a list
+        of feedbacks for each charging station (each feedback, in turn, consists of a two-element list with
         (negative) queue time and charging time of each visited charging station).
         """
         station_ids = action[1]
@@ -441,8 +442,8 @@ class ThompsonSamplingNavigationBanditAlgorithm(AbstractNavigationBanditAlgorith
         charging stations visited along the traveled path.
         :param feedback: The feedback (observed time) of the action (path). The feedback consists of a two-element
         tuple, where the first element is a dict of dicts containing the travel / queue / charge time of the edges
-        traversed along the path (indexed by source and target vertex of each edge), and the second element is a dict
-        of feedback indexed by charging station ID (each feedback, in turn, consists of a two-element tuple with
+        traversed along the path (indexed by source and target vertex of each edge), and the second element is a list
+        of feedbacks for each charging station (each feedback, in turn, consists of a two-element list with
         (negative) queue time and charging time of each visited charging station).
         """
         AbstractNavigationBanditAlgorithm.update_with_feedback(self, iteration, action, feedback)

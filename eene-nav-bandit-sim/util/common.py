@@ -5,7 +5,7 @@ import numpy as np
 
 
 def mc_estimate_of_mean_charge_power_reciprocal(charge_alpha, charge_beta, min_power, max_power,
-                                                number_of_samples=1000, scale=300.):
+                                                number_of_samples=1000, scale=300., rng=np.random.default_rng()):
     """ Monte Carlo estimate of the expected reciprocal of the charging power (assumed to be gamma-distributed)
 
     :param charge_alpha: Alpha parameter of the charging power distribution
@@ -14,11 +14,12 @@ def mc_estimate_of_mean_charge_power_reciprocal(charge_alpha, charge_beta, min_p
     :param max_power: Maximum allowed power
     :param number_of_samples: Number of Monte Carlo samples
     :param scale: Scale factor for the charging power distribution
+    :param rng: NumPy random number generator
     :return: Estimate of the expected reciprocal of the charging power
     """
-    gamma_sample = np.random.gamma(float(charge_alpha),
-                                   scale=1. / float(charge_beta),
-                                   size=number_of_samples)
+    gamma_sample = rng.gamma(float(charge_alpha),
+                             scale=1. / float(charge_beta),
+                             size=number_of_samples)
     charging_power_sample = np.maximum(min_power, max_power - (gamma_sample * scale))
     avg_charging_power_reciprocal = (1. / charging_power_sample).mean()
     return avg_charging_power_reciprocal
