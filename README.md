@@ -23,7 +23,7 @@ Please cite us in the following way you use the code for new publications:
 
 ## Dependencies
 
-The project is developed using Python 3.9, with the following dependencies and versions:
+The project is developed using Python 3.9, with the following dependencies and (tested) versions:
 
 | Dependency |             Version |
 |:-----------|--------------------:|
@@ -32,6 +32,7 @@ The project is developed using Python 3.9, with the following dependencies and v
 | Matplotlib |   `3.6.2` - `3.8.1` |
 | Pandas     |   `1.4.3` - `2.1.3` |
 | NetworkX   |   `2.8.8` - `3.2.1` |
+| pytest     |             `7.4.3` |
 
 ## Input Data 
 
