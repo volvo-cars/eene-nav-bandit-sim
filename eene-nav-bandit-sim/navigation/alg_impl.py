@@ -18,7 +18,14 @@ from util.common import mc_estimate_of_mean_charge_power_reciprocal, MillerDummy
 EPSILON = np.finfo(float).eps
 
 
-class NavigationBanditAlgorithm(BanditAlgorithm):
+class AbstractNavigationBanditAlgorithm(BanditAlgorithm):
+    """ Abstract bandit algorithm for long-distance navigation of electric vehicles
+
+    This abstract class contains code for setting up (in the constructor) and updating the internal representation
+    of the navigation environment, whereas action selection is left for subclasses. The internal state consists
+    of posterior distributions over the parameters of the queue time and charging power distributions, for each
+    charging station.
+    """
 
     def __init__(self,
                  env_constructor: Callable[[], NavigationBanditEnvironment],
@@ -27,6 +34,17 @@ class NavigationBanditAlgorithm(BanditAlgorithm):
                  min_power_factor=0.5,
                  power_scale=300.,
                  rng=np.random.default_rng()):
+        """ Constructor for a navigation bandit algorithm
+
+        :param env_constructor: Zero-argument function returning a new navigation bandit environment.
+        :param queue_prior: Prior distribution of over the queue time distribution (prior assumed to be the same for
+        all charging stations).
+        :param charge_prior: Prior distribution of over the charging power distribution (prior assumed to be the same
+        for all charging stations).
+        :param min_power_factor: Minimum power provided by each charging station, as factor of the specified level.
+        :param power_scale: Scaling factor for the power probability distribution of each charging station.
+        :param rng: NumPy random number generator.
+        """
         self.queue_prior = queue_prior
         self.charge_prior = charge_prior
         self.min_power_factor = min_power_factor
@@ -86,6 +104,18 @@ class NavigationBanditAlgorithm(BanditAlgorithm):
         return mean_queue_time, 1./charging_power_reciprocal
 
     def update_with_feedback(self, iteration, action, feedback):
+        """ Update the posterior distributions over the feedback distribution parameters with new observations.
+
+        :param iteration: The current iteration (i.e., time step).
+        :param action: An (already performed) action, in the form of two-element tuple, where the first element is
+        a list of vertex IDs for the traveled path, and the second element is a list of charging station IDs for the
+        charging stations visited along the traveled path.
+        :param feedback: The feedback (observed time) of the action (path). The feedback consists of a two-element
+        tuple, where the first element is a dict of dicts containing the travel / queue / charge time of the edges
+        traversed along the path (indexed by source and target vertex of each edge), and the second element is a dict
+        of feedback indexed by charging station ID (each feedback, in turn, consists of a two-element tuple with
+        (negative) queue time and charging time of each visited charging station).
+        """
         station_ids = action[1]
         station_feedbacks = feedback[1]
 
@@ -130,10 +160,25 @@ class NavigationBanditAlgorithm(BanditAlgorithm):
             self.posterior_alpha_modes[station_ids[idx]] = alpha_hat
 
     def select_action(self, iteration):
+        """ Given the current iteration, the bandit algorithm should provide the environment
+        with an action. Action selection is not implemented in this abstract class.
+
+        :param iteration: The current iteration (i.e., time step).
+        :return: The action which will be passed to the environment the current iteration.
+        """
         raise ValueError("For NavigationBanditAlgorithm, select_action() is not implemented!")
 
 
-class EpsilonGreedyNavigationBanditAlgorithm(NavigationBanditAlgorithm):
+class EpsilonGreedyNavigationBanditAlgorithm(AbstractNavigationBanditAlgorithm):
+    """ Epsilon-greedy bandit algorithm for long-distance navigation of electric vehicles
+
+    This class implements the epsilon-greedy method of exploration for selecting charging stations (and paths
+    between them). For each iteration, with probability epsilon (determined by a specified function, which may
+    take the current iteration (i.e., time step) into account), this algorithm will explore an action (path)
+    at random. Otherwise, a path minimizing the MAP estimates of the total expected travel / queue / charge
+    time will be selected. The random path selection is performed by first selecting a charging station uniformly
+    at random, and then finding the shortest path via that charging station.
+    """
 
     def __init__(self,
                  env_constructor: Callable[[], NavigationBanditEnvironment],
@@ -143,14 +188,27 @@ class EpsilonGreedyNavigationBanditAlgorithm(NavigationBanditAlgorithm):
                  min_power_factor=0.5,
                  power_scale=300.,
                  rng=np.random.default_rng()):
+        """ Constructor for the epsilon-greedy navigation bandit algorithm
+
+        :param env_constructor: Zero-argument function returning a new navigation bandit environment.
+        :param epsilon_function: Function which takes the current iteration (i.e., integer time step) as an argument
+        and returns a probability of selecting a random action (between 0.0 and 1.0, inclusive).
+        :param queue_prior: Prior distribution of over the queue time distribution (prior assumed to be the same for
+        all charging stations).
+        :param charge_prior: Prior distribution of over the charging power distribution (prior assumed to be the same
+        for all charging stations).
+        :param min_power_factor: Minimum power provided by each charging station, as factor of the specified level.
+        :param power_scale: Scaling factor for the power probability distribution of each charging station.
+        :param rng: NumPy random number generator.
+        """
         self.epsilon_function = epsilon_function
-        NavigationBanditAlgorithm.__init__(self,
-                                           env_constructor=env_constructor,
-                                           queue_prior=queue_prior,
-                                           charge_prior=charge_prior,
-                                           min_power_factor=min_power_factor,
-                                           power_scale=power_scale,
-                                           rng=rng)
+        AbstractNavigationBanditAlgorithm.__init__(self,
+                                                   env_constructor=env_constructor,
+                                                   queue_prior=queue_prior,
+                                                   charge_prior=charge_prior,
+                                                   min_power_factor=min_power_factor,
+                                                   power_scale=power_scale,
+                                                   rng=rng)
 
     def _compute_posterior_modes(self):
         posterior_modes = dict()
@@ -206,6 +264,13 @@ class EpsilonGreedyNavigationBanditAlgorithm(NavigationBanditAlgorithm):
         return posterior_modes
 
     def select_action(self, iteration):
+        """ Select an action (path) for the current iteration using the epsilon-greedy exploration method.
+
+        :param iteration: The current iteration (i.e., time step).
+        :return: An action in the form of two-element tuple, where the first element is a list of vertex IDs for the
+        traveled path, and the second element is a list of charging station IDs for the charging stations visited
+        along the traveled path.
+        """
         epsilon = self.epsilon_function(iteration)
 
         if epsilon > 0.0 and self.rng.random() < epsilon:
@@ -218,6 +283,12 @@ class EpsilonGreedyNavigationBanditAlgorithm(NavigationBanditAlgorithm):
 
 
 class GreedyNavigationBanditAlgorithm(EpsilonGreedyNavigationBanditAlgorithm):
+    """ Greedy bandit algorithm for long-distance navigation of electric vehicles
+
+    This class implements the (naive) greedy method of exploration for selecting charging stations (and paths between
+    them). For each iteration, a path minimizing the MAP estimates of the total expected travel / queue / charge
+    time will be selected. In practice, this is a subclass of the epsilon-greedy method, with epsilon set to 0.0.
+    """
 
     def __init__(self,
                  env_constructor: Callable[[], NavigationBanditEnvironment],
@@ -226,6 +297,17 @@ class GreedyNavigationBanditAlgorithm(EpsilonGreedyNavigationBanditAlgorithm):
                  min_power_factor=0.5,
                  power_scale=300.,
                  rng=np.random.default_rng()):
+        """ Constructor for the greedy navigation bandit algorithm
+
+        :param env_constructor: Zero-argument function returning a new navigation bandit environment.
+        :param queue_prior: Prior distribution of over the queue time distribution (prior assumed to be the same for
+        all charging stations).
+        :param charge_prior: Prior distribution of over the charging power distribution (prior assumed to be the same
+        for all charging stations).
+        :param min_power_factor: Minimum power provided by each charging station, as factor of the specified level.
+        :param power_scale: Scaling factor for the power probability distribution of each charging station.
+        :param rng: NumPy random number generator.
+        """
         EpsilonGreedyNavigationBanditAlgorithm.__init__(self,
                                                         env_constructor=env_constructor,
                                                         epsilon_function=lambda t: 0.0,
@@ -236,7 +318,14 @@ class GreedyNavigationBanditAlgorithm(EpsilonGreedyNavigationBanditAlgorithm):
                                                         rng=rng)
 
 
-class ThompsonSamplingNavigationBanditAlgorithm(NavigationBanditAlgorithm):
+class ThompsonSamplingNavigationBanditAlgorithm(AbstractNavigationBanditAlgorithm):
+    """ Thompson Sampling bandit algorithm for long-distance navigation of electric vehicles
+
+    This class implements the Thompson Sampling method of exploration for selecting charging stations (and paths between
+    them). For each iteration, it draws samples the current posterior distributions over the queue time and charging
+    power distributions. Expected values for the total expected travel / queue / charge time is then computed with
+    respect to the sampled distributions. A path is then selected which minimizes these expected values.
+    """
 
     def __init__(self,
                  env_constructor: Callable[[], NavigationBanditEnvironment],
@@ -246,17 +335,32 @@ class ThompsonSamplingNavigationBanditAlgorithm(NavigationBanditAlgorithm):
                  min_power_factor=0.5,
                  power_scale=300.,
                  rng=np.random.default_rng()):
+        """Constructor for the Thompson Sampling navigation bandit algorithm
+
+        :param env_constructor: Zero-argument function returning a new navigation bandit environment.
+        :param number_of_cached_samples: Since the creation of a Transformed Density Rejection sampler for the
+        posterior distribution over (gamma) charging power distributions is relatively heavy in terms of run-time,
+        this specifies the number of cached samples per charging station (since very few posterior distributions
+        are changed each iteration).
+        :param queue_prior: Prior distribution of over the queue time distribution (prior assumed to be the same for
+        all charging stations).
+        :param charge_prior: Prior distribution of over the charging power distribution (prior assumed to be the same
+        for all charging stations).
+        :param min_power_factor: Minimum power provided by each charging station, as factor of the specified level.
+        :param power_scale: Scaling factor for the power probability distribution of each charging station.
+        :param rng: NumPy random number generator.
+        """
         self.use_mode_sampler = defaultdict(lambda: False)
         self.cached_samples = defaultdict(list)
         self.cached_samples_indices = defaultdict(lambda: 0)
         self.number_of_cached_samples = number_of_cached_samples
-        NavigationBanditAlgorithm.__init__(self,
-                                           env_constructor=env_constructor,
-                                           queue_prior=queue_prior,
-                                           charge_prior=charge_prior,
-                                           min_power_factor=min_power_factor,
-                                           power_scale=power_scale,
-                                           rng=rng)
+        AbstractNavigationBanditAlgorithm.__init__(self,
+                                                   env_constructor=env_constructor,
+                                                   queue_prior=queue_prior,
+                                                   charge_prior=charge_prior,
+                                                   min_power_factor=min_power_factor,
+                                                   power_scale=power_scale,
+                                                   rng=rng)
 
     def _create_sampler(self, ln_p, q, r, s, use_mode_sampler=False, mode=None):
         miller_dist = GammaConjugatePriorAlphaDist(ln_p, q, r, s)
@@ -329,20 +433,47 @@ class ThompsonSamplingNavigationBanditAlgorithm(NavigationBanditAlgorithm):
         return posterior_samples
 
     def update_with_feedback(self, iteration, action, feedback):
-        NavigationBanditAlgorithm.update_with_feedback(self, iteration, action, feedback)
+        """ Update the posterior distributions over the feedback distribution parameters with new observations.
+
+        :param iteration: The current iteration (i.e., time step).
+        :param action: An (already performed) action, in the form of two-element tuple, where the first element is
+        a list of vertex IDs for the traveled path, and the second element is a list of charging station IDs for the
+        charging stations visited along the traveled path.
+        :param feedback: The feedback (observed time) of the action (path). The feedback consists of a two-element
+        tuple, where the first element is a dict of dicts containing the travel / queue / charge time of the edges
+        traversed along the path (indexed by source and target vertex of each edge), and the second element is a dict
+        of feedback indexed by charging station ID (each feedback, in turn, consists of a two-element tuple with
+        (negative) queue time and charging time of each visited charging station).
+        """
+        AbstractNavigationBanditAlgorithm.update_with_feedback(self, iteration, action, feedback)
         station_ids = action[1]
         for station_id in station_ids:
             # Reset sample cache
             self.cached_samples_indices[station_id] = self.number_of_cached_samples
 
     def select_action(self, iteration):
+        """ Select an action (path) for the current iteration using the Thompson Sampling exploration method.
+
+        :param iteration: The current iteration (i.e., time step).
+        :return: An action in the form of two-element tuple, where the first element is a list of vertex IDs for the
+        traveled path, and the second element is a list of charging station IDs for the charging stations visited
+        along the traveled path.
+        """
         posterior_samples = self._generate_posterior_samples(iteration)
         self.bandit_algorithm_environment.replace_action_parameters(None, posterior_samples)
         (path, station_ids) = self.bandit_algorithm_environment.find_best_action(iteration)
         return path, station_ids
 
 
-class BayesUcbNavigationBanditAlgorithm(NavigationBanditAlgorithm):
+class BayesUcbNavigationBanditAlgorithm(AbstractNavigationBanditAlgorithm):
+    """ BayesUCB bandit algorithm for long-distance navigation of electric vehicles
+
+    This class implements the BayesUCB method of exploration for selecting charging stations (and paths between
+    them). For each iteration, it uses upper (and lower) quantiles of the current posterior distributions over the
+    queue time and charging power distributions to compute optimistic estimates of the feedback distributions.
+    Expected values for the total expected travel / queue / charge time is then computed with respect to the
+    optimistic distributions. A path is then selected which minimizes these expected values.
+    """
 
     def _compute_posterior_ucbs(self, iteration):
         posterior_parameter_list = [(station_id, self.posterior_parameters[station_id])
@@ -385,6 +516,13 @@ class BayesUcbNavigationBanditAlgorithm(NavigationBanditAlgorithm):
         return posterior_ucb
 
     def select_action(self, iteration):
+        """ Select an action (path) for the current iteration using the BayesUCB exploration method.
+
+        :param iteration: The current iteration (i.e., time step).
+        :return: An action in the form of two-element tuple, where the first element is a list of vertex IDs for the
+        traveled path, and the second element is a list of charging station IDs for the charging stations visited
+        along the traveled path.
+        """
         posterior_ucbs = self._compute_posterior_ucbs(iteration)
         self.bandit_algorithm_environment.replace_action_parameters(None, posterior_ucbs)
         (path, station_ids) = self.bandit_algorithm_environment.find_best_action(iteration)

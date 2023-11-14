@@ -29,6 +29,15 @@ ChargePrior = namedtuple('ChargePrior', 'ln_p q r s')
 
 
 class NavigationBanditEnvironment(BanditEnvironment):
+    """ Navigation bandit environment for long-distance navigation of electric vehicles
+
+    The environment computes and contains the graph of feasible paths (given the specified battery capacity)
+    between charging stations. It can, given provided expected values of travel / queue / charge times, compute
+    the shortest path through charging stations from the specified start and end vertices. Furthermore, given a
+    provided path, it can both generate (random) feedback for a bandit algorithm and compute the expected
+    travel / queue / charge times. The queue time and charging power distributions are generated from the provided
+    prior distributions in the beginning of a bandit experiment (i.e., in the constructor of this class).
+    """
 
     def __init__(self,
                  charging_station_df: pd.DataFrame,
@@ -43,6 +52,26 @@ class NavigationBanditEnvironment(BanditEnvironment):
                  min_power_factor=0.5,
                  power_scale=300.,
                  rng=np.random.default_rng()):
+        """ Constructor for a navigation bandit environment.
+
+        :param charging_station_df: Pandas DataFrame containing all charging stations (related to road graph vertex IDs)
+        :param charging_graph_ids_df: Pandas DataFrame relating charging station IDs, road graph vertex IDs and
+        preprocessed matrix IDs.
+        :param charging_graph_consumption_ndarray: Two-dimensional matrix containing energy consumption of the shortest
+        paths between all pairs of charging stations.
+        :param charging_graph_time_ndarray: Two-dimensional matrix containing travel time of the shortest paths between
+        all pairs of charging stations.
+        :param battery_capacity: Battery capacity of simulation vehicle (in joules)
+        :param start_node: Start vertex ID (must correspond to node ID of a charging station)
+        :param end_node: End vertex ID (must correspond to node ID of a charging station)
+        :param queue_prior: Prior distribution of over the queue time distribution (prior assumed to be the same for
+        all charging stations).
+        :param charge_prior: Prior distribution of over the charging power distribution (prior assumed to be the same
+        for all charging stations).
+        :param min_power_factor: Minimum power provided by each charging station, as factor of the specified level.
+        :param power_scale: Scaling factor for the power probability distribution of each charging station.
+        :param rng: NumPy random number generator.
+        """
         self.charging_graph_consumption_ndarray = charging_graph_consumption_ndarray
         self.charging_graph_time_ndarray = charging_graph_time_ndarray
         self.charging_graph_power_ndarray = np.zeros(charging_graph_consumption_ndarray.shape[0])
@@ -334,6 +363,20 @@ class NavigationBanditEnvironment(BanditEnvironment):
         charging_station['charging_power_sample'] = charging_power
 
     def receive_feedback_for_action(self, iteration, action):
+        """ For a given iteration and action (path), this function returns the (random) feedback (queue, charge and
+        travel time) for all edges and charging stations. This random feedback is updated for the environment once per
+        iteration.
+
+        :param iteration: The current iteration (i.e., time step).
+        :param action: An (already performed) action, in the form of two-element tuple, where the first element is
+        a list of vertex IDs for the traveled path, and the second element is a list of charging station IDs for the
+        charging stations visited along the traveled path.
+        :return: The feedback (observed time) of the action (path). The feedback consists of a two-element
+        tuple, where the first element is a dict of dicts containing the travel / queue / charge time of the edges
+        traversed along the path (indexed by source and target vertex of each edge), and the second element is a dict
+        of feedback indexed by charging station ID (each feedback, in turn, consists of a two-element tuple with
+        (negative) queue time and charging time of each visited charging station).
+        """
         (path, station_ids) = action
         station_reward_dict = dict()
         path_reward_dict = defaultdict(dict)
@@ -362,6 +405,15 @@ class NavigationBanditEnvironment(BanditEnvironment):
         return path_reward_dict, [station_reward_dict[idx] for idx in station_ids]
 
     def expected_reward_for_action(self, iteration, action):
+        """ For a given iteration and action (path), this function returns the expected reward of the action,
+        (i.e., the negative expected total travel time of the path).
+
+        :param iteration: The current iteration (i.e., time step).
+        :param action: An (already performed) action, in the form of two-element tuple, where the first element is
+        a list of vertex IDs for the traveled path, and the second element is a list of charging station IDs for the
+        charging stations visited along the traveled path.
+        :return: The total (negative) expected travel time for the path
+        """
         (path, _) = action
         expected_cost = 0.
         for from_node, to_node in zip(path, path[1:]):
@@ -374,6 +426,15 @@ class NavigationBanditEnvironment(BanditEnvironment):
         return -expected_cost
 
     def find_best_action(self, iteration):
+        """ For a given iteration, this function finds the best action (i.e., the shortest path through charging
+        stations between the provided start and end vertices, with respect to the expected travel, queue and
+        charge time of all edges and charging stations).
+
+        :param iteration: The current iteration (i.e., time step).
+        :return: The best action (the shortest path), in the form of two-element tuple, where the first element is
+        a list of vertex IDs for the traveled path, and the second element is a list of charging station IDs for the
+        charging stations visited along the traveled path.
+        """
         path = nx.astar_path(self.nx_charging_graph,
                              self.start_node,
                              self.end_node,
@@ -387,6 +448,15 @@ class NavigationBanditEnvironment(BanditEnvironment):
         return path, station_ids
 
     def find_random_action(self, iteration):
+        """ For a given iteration, this functions samples a random action (i.e., a random path through charging stations
+        between the provided start and end vertices). The random path selection is performed by first selecting a
+        charging station uniformly at random, and then finding the shortest path via that charging station.
+
+        :param iteration: The current iteration (i.e., time step).
+        :return: A random action (path), in the form of two-element tuple, where the first element is
+        a list of vertex IDs for the traveled path, and the second element is a list of charging station IDs for the
+        charging stations visited along the traveled path.
+        """
         start = self.start_node
         end = self.end_node
         filtered_station_ids = [station_id for station_id in self.charging_stations
@@ -420,10 +490,21 @@ class NavigationBanditEnvironment(BanditEnvironment):
         return path, station_ids
 
     def update_environment(self):
+        """ Once per iteration, this method is called to update the state of the environment. This includes updating
+        the random feedback for all edges and charging stations.
+        """
         for station_id in self.charging_stations:
             self._charging_station_update(self.charging_stations[station_id])
 
     def replace_action_parameters(self, edge_parameters, charging_station_parameters):
+        """ Replace the parameters used to compute the expected travel, queue and charge times for shortest path
+        computations.
+
+        :param edge_parameters: A dict of dicts indexed by source and target vertices for all edges in the graph,
+        containing the expected travel, queue and charging time of each edge.
+        :param charging_station_parameters: A dict indexed by charging station ID for all charging stations,
+        containing a two-element tuple with expected queue time and charging power for each charging station.
+        """
         if edge_parameters is not None:
             for from_node in edge_parameters:
                 for to_node in edge_parameters[from_node]:

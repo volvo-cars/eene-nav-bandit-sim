@@ -5,13 +5,25 @@ from collections import MutableMapping
 
 
 class Edge:
+    """ Road graph edge (attribute container class).
+    """
     def __init__(self, length):
+        """ Constructor of the edge
+
+        :param length: Edge length
+        """
         self.length = length
 
 
 class VertexOutgoingEdges(MutableMapping):
+    """ Dict-like container of outgoing edges from a specific vertex.
+    """
 
     def __init__(self, road_graph):
+        """ Constructor for the container of outgoing edges
+
+        :param road_graph: Parent road graph
+        """
         self.road_graph = road_graph
         self.edges = dict()
 
@@ -48,8 +60,12 @@ class VertexOutgoingEdges(MutableMapping):
 
 
 class RoadGraph(MutableMapping):
+    """ Road network graph structure
+    """
 
     def __init__(self):
+        """ Constructor of road network graph
+        """
         self.graph = dict()
         self.set_edge_weight_function()
 
@@ -73,6 +89,12 @@ class RoadGraph(MutableMapping):
             super(RoadGraph, self).__repr__(), self.graph)
 
     def set_edge_weight_function(self, fun=None):
+        """ Set the single-argument function (w.r.t. an edge) which returns the weight of the edge.
+        The default, if "e" is the edge, is to use the "e.weight" attribute, if it exists, otherwise
+        "e.length".
+
+        :param fun: single-argument function (w.r.t. an edge) which returns the weight of the edge.
+        """
         if fun is None or fun == 'length':
             self._edge_weight_fun = lambda e: e.weight if hasattr(e, 'weight') else e.length
         elif fun == 'time':
@@ -84,9 +106,17 @@ class RoadGraph(MutableMapping):
                              "'length', 'time' or a function!")
 
     def get_edge_weight_function(self):
+        """ Return the single-argument function (w.r.t. an edge) which returns the weight of the edge.
+
+        :return: Single-argument function (w.r.t. an edge) which returns the weight of the edge.
+        """
         return self._edge_weight_fun
 
     def reverse(self):
+        """ Create a new road network graph with all directed edges reversed.
+
+        :return: New road network graph with all directed edges reversed.
+        """
         reverse_graph = RoadGraph()
         for from_edge in self.graph:
             for to_edge in self.graph[from_edge]:
