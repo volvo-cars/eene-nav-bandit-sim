@@ -130,7 +130,7 @@ is given below:
 | --logging-level                 | String |                   "info"                   |   Logging level (possible values: `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"`) |
 
 **NOTE**: Charging power prior distribution parameters `r0` and `s0` are merged to a single parameter `xi_0` in the 
-paper.
+paper. Examples of the input data format for `sim_runner.py` can be found in the unit tests.
 
 ## Contributing
 

@@ -47,7 +47,7 @@ class BanditExperiment(object):
     def run_experiment(self):
         """ Run the experiment for the specified number of iterations and return the results
 
-        :return: Experiment results (Pandas DataFrame with regret per algorithm and iteration)
+        :return: Experiment results (List of dicts with regret per algorithm and iteration)
         """
         logging.debug("BanditExperiment: Starting experiment, name: " + str(self.experiment_name))
         self.bandit_environment = self.bandit_environment_constructor()
@@ -62,9 +62,9 @@ class BanditExperiment(object):
             logging.debug("BanditExperiment: Experiment iteration " + str(iteration) +
                           ", name: " + str(self.experiment_name))
             iteration_results = self._run_iteration(iteration,
-                                                   self.bandit_environment,
-                                                   self.bandit_algorithm,
-                                                   optimal_expected_reward)
+                                                    self.bandit_environment,
+                                                    self.bandit_algorithm,
+                                                    optimal_expected_reward)
             experiment_results.append(iteration_results)
 
         return experiment_results
