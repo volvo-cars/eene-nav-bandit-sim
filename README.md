@@ -143,4 +143,5 @@ The code is licensed under an Apache 2.0 license, copyright 2023 Volvo Car Corpo
 ## Acknowledgements
 
 This work is funded by the Strategic Vehicle Research and Innovation Programme (FFI) of Sweden, 
-through the project EENE (reference number: 2018-01937). 
+through the project [EENE](https://www.vinnova.se/en/p/eene-energy-effective-navigation-for-evs) 
+(reference number: 2018-01937). 
